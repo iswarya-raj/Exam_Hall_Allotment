@@ -45,7 +45,7 @@ body {
     top: 0;
     bottom: 0;
     width: 3px;
-    background: linear-gradient(180deg, transparent, #0ef2a6a8, transparent);
+    background: linear-gradient(180deg, transparent, #0e93f2a8, transparent);
     box-shadow: 0 0 15px hsla(165, 47%, 65%, 0.667);
     border-radius: 2px;
 }
