@@ -12,40 +12,44 @@ const App = () => {
     const [selected, setSelected] = useState([]);
     const [frozenRows, setFrozenRows] = useState(new Set());
     const [designation, setDesignation] = useState('');
-
-    const data = [
-        { Date: "05/11/2024", Slot: 'I', Time: "FN" },
-        { Date: "05/11/2024", Slot: 'II', Time: "AN" },
-        { Date: "06/11/2024", Slot: 'I', Time: "FN" },
-        { Date: "06/11/2024", Slot: 'II', Time: "AN" },
-        { Date: "07/11/2024", Slot: 'I', Time: "FN" },
-        { Date: "07/11/2024", Slot: 'II', Time: "AN" },
-        { Date: "08/11/2024", Slot: 'I', Time: "FN" },
-        { Date: "08/11/2024", Slot: 'II', Time: "AN" },
-        { Date: "09/11/2024", Slot: 'I', Time: "FN" },
-        { Date: "09/11/2024", Slot: 'II', Time: "AN" },
-        { Date: "10/11/2024", Slot: 'I', Time: "FN" },
-        { Date: "10/11/2024", Slot: 'II', Time: "AN" },
-    ];
-
-    const TotalDuty = () => {
-        if (document.getElementById('P').checked) {
-            setTotal(10);
-            setRemaining(10 - completed);
-        } else {
-            setTotal(12);
-            setRemaining(12 - completed);
+    const [adminData, setAdminData] = useState([]);
+    const [slotData,setSlotData]=useState([]);
+    const [showSavedMessage, setShowSavedMessage] = useState(false);
+    const [totalProfessors, setTotalProfessors] = useState(0);
+    const [totalAssistantProfessors, setTotalAssistantProfessors] = useState(0);
+    const [totalHallsAdmin, setTotalHallsAdmin] = useState(0);
+    
+    const adjustDuties = () => {
+        event.preventDefault();
+        if (totalProfessors > 0 && totalAssistantProfessors > 0 && total > 0) {
+          const profDuties = Math.floor((total * 2) / (totalProfessors + totalAssistantProfessors * 2));
+          const apDuties = Math.floor((total * 2 * 2) / (totalProfessors + totalAssistantProfessors * 2));
+          setTotal(profDuties + apDuties);
+          setRemaining(total - completed);
         }
-    };
+      };
 
     const handleRadioChange = (event) => {
         setDesignation(event.target.value);
-        TotalDuty();
+        adjustDuties();
     };
 
     const handleClick = async (event, newAction) => {
         event.preventDefault();
-
+        if(action==="Login"){
+            const staffID=document.getElementById("StaffID").value;
+            if(staffID==="adminpsna123" && newAction==="Slot Registration"){
+                setAction("Admin");
+            }
+            else if(newAction==="Staff Registration"){
+                setAction("Staff Registration");
+            }
+            else{
+                setAction("Slot Registration")
+            }
+        }else{
+            setAction(newAction);
+        }
         if (newAction === "Done") {
             // Collect form data
             const name = document.getElementById('Name').value;
@@ -110,9 +114,40 @@ const App = () => {
             setHalls([...halls]);
             setCompleted(count => count + 1);
             setRemaining(count => count - 1);
-            setSelected(prevSelected => [...prevSelected, data[index]]);
+            setSelected(prevSelected => [...prevSelected, slotData[index]]);
             setFrozenRows(prevFrozenRows => new Set(prevFrozenRows).add(index));
         }
+    };
+
+    const handleSave = (event) => {
+        event.preventDefault();
+        const totals = calculateTotalHalls();
+        console.log("Aggregated slotData:", totals);
+        setSlotData(totals); 
+        const newHalls = totals.map(slot => slot.Halls);
+        setHalls(newHalls);
+        setShowSavedMessage(true);
+        setTimeout(() => setShowSavedMessage(false), 2000);
+    };
+
+    const calculateTotalHalls = () => {
+        const totals = [];
+        adminData.forEach(row => {
+            const existingEntry = totals.find(item => item.Date === row.Date && item.Slot === row.Slot);
+            if (existingEntry) {
+                existingEntry.Halls += parseInt(row.Halls);
+            } else {
+                totals.push({ Date: row.Date, Slot: row.Slot, Time: row.Time, Halls: parseInt(row.Halls) });
+            }
+        });
+        console.log("Calculated totals (slotData):", totals);
+        return totals;
+    };
+
+    const addRow = (event) => {
+        event.preventDefault();
+        const newRow = { Date: "", Slot: "", Time: "", Dept: "", Halls: "" };
+        setAdminData(prevData => [...prevData, newRow]);
     };
 
     return (
@@ -124,8 +159,10 @@ const App = () => {
                         <form>
                             {action === "Staff Registration" &&
                                 <div>
-                                    <label>Name</label>
-                                    <input id="Name" className="InputIDs" type="text" /><br />
+                                    <div className="input-container">
+                                    <i className="fas fa-user"></i>
+                                    <input id="Name" className="InputIDs" type="text" placeholder="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Name"/><br />
+                                    </div>
                                     <label>Department</label>
                                     <input id="Dept" className="InputIDs" type="text" /><br />
                                     <label>Designation</label><br />
@@ -140,7 +177,7 @@ const App = () => {
                                     <label>Password</label>
                                     <input id="Password" className="InputIDs" type="password" /><br />
                                     <button id="Register" onClick={(event) => handleClick(event, "Done")}>Register</button><br />
-                                    <div>Go back to Login: <button id="sma" onClick={(event) => handleClick(event, "Login")}>Login</button></div>
+                                    <div>Go back to Login: <span id="sma" onClick={(event) => handleClick(event, "Login")}>Login</span></div>
                                 </div>
                             }
                             {action === "Login" &&
@@ -157,13 +194,142 @@ const App = () => {
                                 <div>
                                     <div id="done">Registration Complete!</div>
                                     <div>Go back to Login:
-                                        <button id="sma" onClick={(event) => { handleClick(event, "Login"); }}>
+                                        <span id="sma" onClick={(event) => { handleClick(event, "Login"); }}>
                                             Login
-                                        </button>
+                                        </span>
                                     </div>
                                 </div>
                             }
+                            {action==="Admin" &&
+                            <div>
+                              <h2>Admin Dashboard</h2>
+                              <div className="input-container">
+                                <label>Total Professors:</label>
+                                <input
+                                type="number"
+                                value={totalProfessors}
+                                onChange={(e) => setTotalProfessors(parseInt(e.target.value))}
+                                />
+                                </div>
+                                <div className="input-container">
+                                    <label>Total Assistant Professors:</label>
+                                    <input
+                                    type="number"
+                                    value={totalAssistantProfessors}
+                                    onChange={(e) => setTotalAssistantProfessors(parseInt(e.target.value))}
+                                    />
+                                    </div>
+                                    <div className="input-container">
+                                        <label>Total Halls:</label>
+                                        <input
+                                        type="number"
+                                        value={totalHallsAdmin}
+                                        onChange={(e) => setTotalHallsAdmin(parseInt(e.target.value))}
+                                        />
+                                        </div>
+                                        <button onClick={adjustDuties}>Adjust Duties</button>
+                                        <table id="myTable" className="table table-success table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Slot</th>
+                                                    <th>Time</th>
+                                                    <th>Department</th>
+                                                    <th>No. of halls</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>{
+                                            adminData.map((row, index) => (
+                                            <tr key={index}>
+                                                <td>
+                                                    <input
+                                                    type="text"
+                                                    value={row.Date}
+                                                    onChange={(e) => {
+                                                        const updatedRows = [...adminData];
+                                                        updatedRows[index].Date = e.target.value;
+                                                        setAdminData(updatedRows);
+                                                    }}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                    type="text"
+                                                    value={row.Slot}
+                                                    onChange={(e) => {
+                                                        const updatedRows = [...adminData];
+                                                        updatedRows[index].Slot = e.target.value;
+                                                        setAdminData(updatedRows);
+                                                    }}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                    type="text"
+                                                    value={row.Time}
+                                                    onChange={(e) => {
+                                                        const updatedRows = [...adminData];
+                                                        updatedRows[index].Time = e.target.value;
+                                                        setAdminData(updatedRows);
+                                                    }}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                    type="text"
+                                                    value={row.Dept}
+                                                    onChange={(e) => {
+                                                        const updatedRows = [...adminData];
+                                                        updatedRows[index].Dept = e.target.value;
+                                                        setAdminData(updatedRows);
+                                                    }}
+                                                    />
+                                                </td>
+                                                <td>
+                                                    <input
+                                                    type="number"
+                                                    value={row.Halls}
+                                                    onChange={(e) => {
+                                                        const updatedRows = [...adminData];
+                                                        updatedRows[index].Halls = e.target.value;
+                                                        setAdminData(updatedRows);
+                                                    }}
+                                                    />
+                                                </td>
+                                                </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        <button onClick={(event) => handleClick(event, "Login")}>Back</button>
+                                        <button id="moreBtn" onClick={addRow}>More</button>
+                                        <button id="saveBtn" onClick={handleSave}>Save</button>
+                                        <button id="view" onClick={(event) => handleClick(event, "Staff Duties")}>View</button>
+                                        {showSavedMessage && (
+                                            <div className="saved-message">
+                                                --- Saved ---
+                                            </div>
+                                        )}  
+                            </div>
+                            }
+                            {action==="Staff Duties" &&
+                            <div>
+                                <table className="table table-success table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Staff Name</th>
+                                            <th>Staff ID</th>
+                                            <th>Date</th>
+                                            <th>Slot</th>
+                                            <th>Department</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
 
+                                    </tbody>
+                                </table>
+                                <button onClick={(event) => handleClick(event, "Admin")}>Back</button>
+                            </div>
+                            }
                             {action === "Slot Registration" &&
                                 <div>
                                     <ul>
@@ -183,15 +349,27 @@ const App = () => {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {data.map((item, index) => (
+                                                {slotData.length===0?(
+                                                        <tr>
+                                                            <td colSpan="5">Not scheduled Yet.</td>
+                                                        </tr>
+                                                    ):(
+                                                slotData.map((item, index) => (
                                                     <tr key={index}>
                                                         <td>{item.Date}</td>
                                                         <td>{item.Slot}</td>
                                                         <td>{item.Time}</td>
                                                         <td>{halls[index]}</td>
-                                                        <td><button className="Select" onClick={(event) => { event.preventDefault(); Counter(index); }}>Select</button></td>
+                                                        <td>
+                                                            {selected.includes(item) ? (
+                                                                <span>Selected</span>
+                                                            ) : (
+                                                            <button onClick={() => Counter(index)} disabled={halls[index] === 0 || selected.includes(item)}>Select</button>
+                                                            )}
+                                                        </td>
                                                     </tr>
-                                                ))}
+                                                ))
+                                            )}
                                             </tbody>
                                         </table>
                                         <button onClick={(event) => handleClick(event, "Hall Allotment")}>View</button>
@@ -218,6 +396,7 @@ const App = () => {
                                             ))}
                                         </tbody>
                                     </table>
+                                    <button onClick={(event) => handleClick(event, "Slot Registration")}>Back</button>
                                 </div>
                             }
                         </form>
