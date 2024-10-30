@@ -205,3 +205,15 @@ thead{
   margin: 0;
   accent-color: #007bff; 
 }
+.saved-message {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgb(0, 0, 0);
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 20px;
+  z-index: 1000;
+}
+
